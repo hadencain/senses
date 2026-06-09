@@ -1,0 +1,15 @@
+node_modules/
+android/
+ios/
+.expo/
+dist/
+build/
+scratch/
+*.log
+.env
+CLAUDE.md
+.claude/
+.superpowers/
+docs/superpowers/
+.idea/
+session_log.md

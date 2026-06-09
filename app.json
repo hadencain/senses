@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Senses",
+    "slug": "senses",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["android"],
+    "android": {
+      "package": "com.senses.app",
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      "expo-dev-client",
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "Senses needs the camera to run visual instruments.",
+          "enableMicrophonePermission": false
+        }
+      ],
+      "expo-sensors",
+      "@shopify/react-native-skia"
+    ]
+  }
+}
