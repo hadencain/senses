@@ -46,8 +46,12 @@ export function sampleVariance(frame) {
 
 export function extractFeatures(frame) {
   'worklet'
-  return {
-    brightness: sampleBrightness(frame),
-    variance: sampleVariance(frame),
+  try {
+    return {
+      brightness: sampleBrightness(frame),
+      variance: sampleVariance(frame),
+    }
+  } catch {
+    return { brightness: 0.5, variance: 0.1 }
   }
 }

@@ -95,6 +95,12 @@ export function EffectScreen() {
     })
   }, [featuresSV, paramsSV, motion.speed, motion.tilt, motion.ax, motion.ay])
 
+  const recorderRef = useRef(recorder)
+  useEffect(() => { recorderRef.current = recorder })
+  useEffect(() => {
+    return () => { if (recorderRef.current.state === 'recording') recorderRef.current.stop() }
+  }, [])
+
   const recording = recorder.state === 'recording'
 
   return (

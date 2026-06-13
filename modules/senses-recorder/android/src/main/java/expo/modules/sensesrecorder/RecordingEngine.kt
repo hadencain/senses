@@ -29,6 +29,7 @@ class RecordingEngine(
   private var audioTrack = -1
   private var muxerStarted = false
   private var audioEnabled = false
+  private var videoPtsOffsetUs = Long.MIN_VALUE
   private val muxerLock = Object()
   @Volatile private var running = false
   private var drainThread: Thread? = null
@@ -116,6 +117,8 @@ class RecordingEngine(
           if (info.size > 0) {
             synchronized(muxerLock) {
               if (muxerStarted) {
+                if (videoPtsOffsetUs == Long.MIN_VALUE) videoPtsOffsetUs = info.presentationTimeUs
+                info.presentationTimeUs -= videoPtsOffsetUs
                 buf.position(info.offset)
                 buf.limit(info.offset + info.size)
                 muxer.writeSampleData(videoTrack, buf, info)

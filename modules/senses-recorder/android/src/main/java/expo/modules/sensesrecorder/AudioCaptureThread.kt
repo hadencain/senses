@@ -66,14 +66,18 @@ class AudioCaptureThread(
 
     val outInfo = MediaCodec.BufferInfo()
     while (running) {
-      val n = playbackRecord.read(playbackBuf, 0, samplesPerChunk, AudioRecord.READ_BLOCKING)
-      if (n <= 0) continue
+      val playbackN = playbackRecord.read(playbackBuf, 0, samplesPerChunk, AudioRecord.READ_NON_BLOCKING)
+      val n: Int
       if (micRecord != null) {
-        val m = micRecord.read(micBuf, 0, n, AudioRecord.READ_BLOCKING)
+        val micN = micRecord.read(micBuf, 0, samplesPerChunk, AudioRecord.READ_BLOCKING)
+        n = if (micN > 0) micN else if (playbackN > 0) playbackN else { continue }
         for (i in 0 until n) {
-          val mixed = playbackBuf[i] + (if (i < m) micBuf[i].toInt() else 0)
-          playbackBuf[i] = mixed.coerceIn(-32768, 32767).toShort()
+          val p = if (playbackN > 0 && i < playbackN) playbackBuf[i].toInt() else 0
+          val m = if (micN > 0 && i < micN) micBuf[i].toInt() else 0
+          playbackBuf[i] = (p + m).coerceIn(-32768, 32767).toShort()
         }
+      } else {
+        n = if (playbackN > 0) playbackN else { continue }
       }
 
       val inIndex = encoder.dequeueInputBuffer(10_000)

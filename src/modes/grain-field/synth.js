@@ -3,15 +3,6 @@ export function createSynth(audioCtx) {
   master.gain.value = 0.25
   master.connect(audioCtx.destination)
 
-  const delay = audioCtx.createDelay(0.5)
-  delay.delayTime.value = 0.18
-  const delayGain = audioCtx.createGain()
-  delayGain.gain.value = 0.3
-  master.connect(delay)
-  delay.connect(delayGain)
-  delayGain.connect(delay)
-  delayGain.connect(audioCtx.destination)
-
   function fire(pitchHz, durationSec, amplitude = 0.3) {
     const now = audioCtx.currentTime
     const env = audioCtx.createGain()
@@ -57,8 +48,6 @@ export function createSynth(audioCtx) {
   function dispose() {
     try {
       master.disconnect()
-      delay.disconnect()
-      delayGain.disconnect()
     } catch {}
   }
 

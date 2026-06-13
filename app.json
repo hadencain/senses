@@ -24,7 +24,17 @@
         }
       ],
       "expo-sensors",
-      ["expo-build-properties", { "android": { "kotlinVersion": "1.9.25" } }]
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25",
+            "minSdkVersion": 26
+          }
+        }
+      ],
+      "expo-asset",
+      "./plugins/with-main-activity-keyfixes"
     ]
   }
 }
