@@ -1,12 +1,8 @@
-// Granular synth: fires clouds of short detuned oscillators.
-// grain density and pitch range driven by motion speed + scene brightness.
-
-export function createGrainSynth(audioCtx) {
+export function createSynth(audioCtx) {
   const master = audioCtx.createGain()
   master.gain.value = 0.25
   master.connect(audioCtx.destination)
 
-  // Subtle reverb via feedback delay
   const delay = audioCtx.createDelay(0.5)
   delay.delayTime.value = 0.18
   const delayGain = audioCtx.createGain()
@@ -24,7 +20,6 @@ export function createGrainSynth(audioCtx) {
     osc.type = 'sawtooth'
     osc.frequency.value = pitchHz
 
-    // tiny attack, exponential decay
     env.gain.setValueAtTime(0, now)
     env.gain.linearRampToValueAtTime(amplitude, now + 0.004)
     env.gain.exponentialRampToValueAtTime(0.0001, now + durationSec)
@@ -38,17 +33,18 @@ export function createGrainSynth(audioCtx) {
 
   let lastFire = 0
 
-  function burst(speed, brightness, variance) {
+  function update(features, motion, params) {
+    master.gain.setTargetAtTime((params.level ?? 0.7) * 0.35, audioCtx.currentTime, 0.1)
+
+    const speed = motion.speed
     const now = Date.now()
-    // density: faster motion → more grains, shorter
-    const density = Math.floor(1 + speed * 12)
-    const minGap = 30 - speed * 25 // ms between bursts
+    const density = Math.floor((1 + speed * 12) * (params.density ?? 1))
+    const minGap = 30 - speed * 25
     if (now - lastFire < minGap) return
     lastFire = now
 
-    // pitch range scales with scene complexity
-    const baseHz = 80 + brightness * 400
-    const spread = 1 + variance * 800
+    const baseHz = (params.pitch ?? 80) + (features.brightness ?? 0.5) * 400
+    const spread = 1 + (features.variance ?? 0) * 800
 
     for (let i = 0; i < density; i++) {
       const pitchHz = baseHz + (Math.random() - 0.5) * spread
@@ -58,9 +54,13 @@ export function createGrainSynth(audioCtx) {
     }
   }
 
-  function setMasterGain(v) {
-    master.gain.setTargetAtTime(v * 0.35, audioCtx.currentTime, 0.1)
+  function dispose() {
+    try {
+      master.disconnect()
+      delay.disconnect()
+      delayGain.disconnect()
+    } catch {}
   }
 
-  return { burst, setMasterGain }
+  return { update, dispose }
 }

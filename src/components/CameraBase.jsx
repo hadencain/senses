@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react'
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native'
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native'
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera'
 import { Canvas } from '@shopify/react-native-skia'
 
 export function CameraBase({
   frameProcessor,
   pixelFormat = 'yuv',
+  skia,
   children,
-  onBack,
 }) {
   const { hasPermission, requestPermission } = useCameraPermission()
   const device = useCameraDevice('back')
@@ -44,14 +44,10 @@ export function CameraBase({
         frameProcessor={frameProcessor}
         pixelFormat={pixelFormat}
       />
-      <Canvas style={StyleSheet.absoluteFill}>
-        {children}
+      <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
+        {skia}
       </Canvas>
-      {onBack && (
-        <TouchableOpacity style={styles.back} onPress={onBack} hitSlop={16}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-      )}
+      {children}
     </View>
   )
 }
@@ -62,11 +58,4 @@ const styles = StyleSheet.create({
   msg: { color: '#555', fontSize: 13 },
   btn: { paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: '#333' },
   btnText: { color: '#888', fontSize: 12 },
-  back: {
-    position: 'absolute',
-    top: 48,
-    left: 16,
-    padding: 8,
-  },
-  backText: { color: '#888', fontSize: 22 },
 })

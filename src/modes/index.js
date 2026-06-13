@@ -1,11 +1,35 @@
-import { GrainField } from './grain-field'
+import { mode as GrainField } from './grain-field'
+import { validateManifest } from './validate'
 
-export const MODES = [
+export const MODES = [GrainField]
+
+export const EDITOR_ENTRIES = [
   {
-    id: 'GrainField',
-    label: 'Grain Field',
-    sub: 'motion → granular',
-    accent: '#c8a96e',
-    component: GrainField,
+    manifest: {
+      id: 'ClipEditor',
+      label: 'Clip Editor',
+      sub: 'effects on recorded footage — phase 2',
+      accent: '#555555',
+      category: 'editor',
+      type: 'editor',
+      params: [],
+    },
   },
 ]
+
+export const ALL_ENTRIES = [...MODES, ...EDITOR_ENTRIES]
+
+export function getMode(id) {
+  const m = MODES.find(m => m.manifest.id === id)
+  if (!m) throw new Error(`Unknown mode: ${id}`)
+  return m
+}
+
+if (__DEV__) {
+  for (const entry of ALL_ENTRIES) {
+    const errors = validateManifest(entry.manifest)
+    if (errors.length) {
+      throw new Error(`Invalid manifest '${entry.manifest?.id}':\n  ${errors.join('\n  ')}`)
+    }
+  }
+}

@@ -43,3 +43,11 @@ export function sampleVariance(frame) {
   for (let j = 0; j < N; j++) variance += (samples[j] - mean) ** 2
   return variance / N
 }
+
+export function extractFeatures(frame) {
+  'worklet'
+  return {
+    brightness: sampleBrightness(frame),
+    variance: sampleVariance(frame),
+  }
+}

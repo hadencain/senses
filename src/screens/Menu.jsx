@@ -3,10 +3,12 @@ import {
   View, Text, TouchableOpacity, FlatList,
   StyleSheet, StatusBar, Dimensions,
 } from 'react-native'
-import { MODES } from '../modes'
+import { MODES, EDITOR_ENTRIES } from '../modes'
 
 const { width } = Dimensions.get('window')
 const CARD = (width - 48) / 2
+
+const ALL = [...MODES, ...EDITOR_ENTRIES]
 
 export function Menu({ navigation }) {
   return (
@@ -14,23 +16,30 @@ export function Menu({ navigation }) {
       <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
       <Text style={styles.wordmark}>SENSES</Text>
       <FlatList
-        data={MODES}
+        data={ALL}
         numColumns={2}
-        keyExtractor={m => m.id}
+        keyExtractor={entry => entry.manifest.id}
         contentContainerStyle={styles.grid}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.card, { borderColor: item.accent + '55' }]}
-            activeOpacity={0.7}
-            onPress={() => navigation.navigate(item.id)}
-          >
-            <View style={[styles.pip, { backgroundColor: item.accent }]} />
-            <View style={styles.cardBody}>
-              <Text style={styles.label}>{item.label}</Text>
-              <Text style={styles.sub}>{item.sub}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item }) => {
+          const m = item.manifest
+          return (
+            <TouchableOpacity
+              style={[styles.card, { borderColor: m.accent + '55' }]}
+              activeOpacity={0.7}
+              onPress={() =>
+                m.type === 'editor'
+                  ? navigation.navigate('EditorStub')
+                  : navigation.navigate('Effect', { modeId: m.id })
+              }
+            >
+              <View style={[styles.pip, { backgroundColor: m.accent }]} />
+              <View style={styles.cardBody}>
+                <Text style={styles.label}>{m.label}</Text>
+                <Text style={styles.sub}>{m.sub}</Text>
+              </View>
+            </TouchableOpacity>
+          )
+        }}
       />
     </View>
   )

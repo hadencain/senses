@@ -4,7 +4,8 @@ import { createStackNavigator } from '@react-navigation/stack'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { StyleSheet } from 'react-native'
 import { Menu } from './src/screens/Menu'
-import { MODES } from './src/modes'
+import { EffectScreen } from './src/components/EffectScreen'
+import { EditorStub } from './src/screens/EditorStub'
 
 const Stack = createStackNavigator()
 
@@ -14,9 +15,8 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: false }}>
           <Stack.Screen name="Menu" component={Menu} />
-          {MODES.map(mode => (
-            <Stack.Screen key={mode.id} name={mode.id} component={mode.component} />
-          ))}
+          <Stack.Screen name="Effect" component={EffectScreen} />
+          <Stack.Screen name="EditorStub" component={EditorStub} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
