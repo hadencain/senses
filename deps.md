@@ -10,7 +10,16 @@
 | @react-navigation/native + stack | screen routing | 2026-06-02 |
 | @react-native-async-storage/async-storage | per-effect param persistence | 2026-06-11 |
 | @react-native-community/slider | settings sheet sliders | 2026-06-11 |
+| expo-build-properties | force kotlinVersion=1.9.25 via config plugin (RN 0.76 BOM resolves 1.9.24 without it, breaking Compose Compiler 1.5.15) | 2026-06-13 |
 
 Native (local Expo module): `modules/senses-recorder` — MediaProjection screen recording. No npm dep.
 
-Version changes from the 2026-06-02 scaffold: react 18.3.2 → 18.3.1 (18.3.2 does not exist in the npm registry; 18.3.1 is the latest React 18.x and satisfies RN 0.76.5's peer range `^18.2.0`)
+Version changes from the 2026-06-02 scaffold:
+- react 18.3.2 → 18.3.1 (18.3.2 does not exist in npm; 18.3.1 is latest React 18.x)
+- expo-dev-client: scaffolded ~4.0.0 (original plan). A prior agent bumped to ~5.0.0 (wrong SDK); reverted to ~4.0.0.
+- app.json: removed `@shopify/react-native-skia` from plugins array (Skia has no config plugin; it broke prebuild)
+
+RN 0.76 compat patches (applied via `postinstall` → `scripts/patch-rn76-compat.js`):
+- expo-dev-menu-interface 1.8.4: removed JSEngineResolutionAlgorithm (removed in RN 0.76 New Arch)
+- expo-dev-menu 5.0.23: same JSEngineResolutionAlgorithm removal; fixed PackagerConnectionSettings override (Java method → Kotlin property)
+- expo-dev-launcher (same version): same two fixes as expo-dev-menu
