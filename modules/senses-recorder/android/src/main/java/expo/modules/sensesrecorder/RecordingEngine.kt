@@ -83,7 +83,7 @@ class RecordingEngine(
 
     audioThread = AudioCaptureThread(
       projection,
-      withMic = false, // Task 12 changes this to the constructor's withMic
+      withMic = withMic,
       encoder = audioCodec!!,
       onEncodedFrame = { buf, info ->
         synchronized(muxerLock) {
