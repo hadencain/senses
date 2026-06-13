@@ -19,7 +19,8 @@
         "react-native-vision-camera",
         {
           "cameraPermissionText": "Senses needs the camera to run visual instruments.",
-          "enableMicrophonePermission": false
+          "enableMicrophonePermission": true,
+          "microphonePermissionText": "Senses records mic audio into your captures."
         }
       ],
       "expo-sensors",
