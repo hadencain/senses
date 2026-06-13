@@ -20,15 +20,20 @@ import java.io.File
 class RecordingEngine(
   private val context: Context,
   private val projection: MediaProjection,
-  @Suppress("unused") private val withMic: Boolean,
+  private val withMic: Boolean,
 ) {
   private lateinit var videoCodec: MediaCodec
   private lateinit var muxer: MediaMuxer
   private var virtualDisplay: android.hardware.display.VirtualDisplay? = null
   private var videoTrack = -1
+  private var audioTrack = -1
   private var muxerStarted = false
+  private var audioEnabled = false
+  private val muxerLock = Object()
   @Volatile private var running = false
   private var drainThread: Thread? = null
+  private var audioCodec: MediaCodec? = null
+  private var audioThread: AudioCaptureThread? = null
   private lateinit var outFile: File
 
   private val projectionCallback = object : MediaProjection.Callback() {
@@ -54,6 +59,16 @@ class RecordingEngine(
     val inputSurface = videoCodec.createInputSurface()
     videoCodec.start()
 
+    audioEnabled = true
+    val audioFormat = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, SAMPLE_RATE, CHANNELS).apply {
+      setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
+      setInteger(MediaFormat.KEY_BIT_RATE, 128_000)
+    }
+    audioCodec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_AAC).apply {
+      configure(audioFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+      start()
+    }
+
     outFile = File(context.cacheDir, "senses-${System.currentTimeMillis()}.mp4")
     muxer = MediaMuxer(outFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
 
@@ -65,6 +80,23 @@ class RecordingEngine(
 
     running = true
     drainThread = Thread { drainLoop() }.also { it.start() }
+
+    audioThread = AudioCaptureThread(
+      projection,
+      withMic = false, // Task 12 changes this to the constructor's withMic
+      encoder = audioCodec!!,
+      onEncodedFrame = { buf, info ->
+        synchronized(muxerLock) {
+          if (muxerStarted) muxer.writeSampleData(audioTrack, buf, info)
+        }
+      },
+      onFormatReady = { fmt ->
+        synchronized(muxerLock) {
+          audioTrack = muxer.addTrack(fmt)
+          maybeStartMuxer()
+        }
+      },
+    ).also { it.start() }
   }
 
   private fun drainLoop() {
@@ -73,16 +105,22 @@ class RecordingEngine(
       val index = videoCodec.dequeueOutputBuffer(info, 10_000)
       when {
         index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
-          videoTrack = muxer.addTrack(videoCodec.outputFormat)
-          maybeStartMuxer()
+          synchronized(muxerLock) {
+            videoTrack = muxer.addTrack(videoCodec.outputFormat)
+            maybeStartMuxer()
+          }
         }
         index >= 0 -> {
           val buf = videoCodec.getOutputBuffer(index) ?: continue
           if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) info.size = 0
-          if (info.size > 0 && muxerStarted) {
-            buf.position(info.offset)
-            buf.limit(info.offset + info.size)
-            muxer.writeSampleData(videoTrack, buf, info)
+          if (info.size > 0) {
+            synchronized(muxerLock) {
+              if (muxerStarted) {
+                buf.position(info.offset)
+                buf.limit(info.offset + info.size)
+                muxer.writeSampleData(videoTrack, buf, info)
+              }
+            }
           }
           videoCodec.releaseOutputBuffer(index, false)
           if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) return
@@ -94,15 +132,23 @@ class RecordingEngine(
     }
   }
 
-  // Task 11 overrides this gate: muxer starts when ALL tracks are added.
   private fun maybeStartMuxer() {
-    if (videoTrack >= 0 && !muxerStarted) {
+    val audioReady = !audioEnabled || audioTrack >= 0
+    if (videoTrack >= 0 && audioReady && !muxerStarted) {
       muxer.start()
       muxerStarted = true
     }
   }
 
   fun stopAndSave(): String? {
+    audioThread?.let { t ->
+      t.running = false
+      t.join(3_000)
+    }
+    audioCodec?.let { try { it.stop() } catch (_: Exception) {}; it.release() }
+    audioThread = null
+    audioCodec = null
+
     running = false
     drainThread?.join(3_000)
     try { videoCodec.stop() } catch (_: Exception) {}
