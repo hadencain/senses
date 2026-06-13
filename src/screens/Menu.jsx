@@ -1,31 +1,36 @@
 import React from 'react'
-import {
-  View, Text, TouchableOpacity, FlatList,
-  StyleSheet, StatusBar, Dimensions,
-} from 'react-native'
-import { MODES, EDITOR_ENTRIES } from '../modes'
+import { View, Text, TouchableOpacity, SectionList, StyleSheet, StatusBar } from 'react-native'
+import { ALL_ENTRIES } from '../modes'
 
-const { width } = Dimensions.get('window')
-const CARD = (width - 48) / 2
-
-const ALL = [...MODES, ...EDITOR_ENTRIES]
+function buildSections() {
+  const byCat = {}
+  for (const entry of ALL_ENTRIES) {
+    const cat = entry.manifest.category
+    if (!byCat[cat]) byCat[cat] = []
+    byCat[cat].push(entry)
+  }
+  return Object.entries(byCat).map(([title, data]) => ({ title, data }))
+}
 
 export function Menu({ navigation }) {
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
       <Text style={styles.wordmark}>SENSES</Text>
-      <FlatList
-        data={ALL}
-        numColumns={2}
+      <SectionList
+        sections={buildSections()}
         keyExtractor={entry => entry.manifest.id}
-        contentContainerStyle={styles.grid}
+        contentContainerStyle={styles.list}
+        stickySectionHeadersEnabled={false}
+        renderSectionHeader={({ section }) => (
+          <Text style={styles.section}>{section.title.toUpperCase()}</Text>
+        )}
         renderItem={({ item }) => {
           const m = item.manifest
           return (
             <TouchableOpacity
-              style={[styles.card, { borderColor: m.accent + '55' }]}
-              activeOpacity={0.7}
+              style={styles.row}
+              activeOpacity={0.6}
               onPress={() =>
                 m.type === 'editor'
                   ? navigation.navigate('EditorStub')
@@ -33,10 +38,8 @@ export function Menu({ navigation }) {
               }
             >
               <View style={[styles.pip, { backgroundColor: m.accent }]} />
-              <View style={styles.cardBody}>
-                <Text style={styles.label}>{m.label}</Text>
-                <Text style={styles.sub}>{m.sub}</Text>
-              </View>
+              <Text style={styles.label}>{m.label}</Text>
+              <Text style={styles.sub}>{m.sub}</Text>
             </TouchableOpacity>
           )
         }}
@@ -46,48 +49,19 @@ export function Menu({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#0a0a0a',
-    paddingTop: 56,
+  root: { flex: 1, backgroundColor: '#0a0a0a', paddingTop: 56 },
+  wordmark: { color: '#2a2a2a', fontSize: 10, letterSpacing: 8, marginBottom: 20, paddingHorizontal: 20 },
+  list: { paddingHorizontal: 20, paddingBottom: 32 },
+  section: { color: '#3a3a3a', fontSize: 10, letterSpacing: 3, marginTop: 26, marginBottom: 6 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 10,
+    paddingVertical: 13,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#1a1a1a',
   },
-  wordmark: {
-    color: '#2a2a2a',
-    fontSize: 10,
-    letterSpacing: 8,
-    marginBottom: 28,
-    paddingHorizontal: 20,
-  },
-  grid: {
-    paddingHorizontal: 12,
-    paddingBottom: 24,
-  },
-  card: {
-    width: CARD,
-    height: CARD,
-    margin: 6,
-    backgroundColor: '#111',
-    borderWidth: 1,
-    borderRadius: 3,
-    padding: 14,
-    justifyContent: 'space-between',
-  },
-  pip: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-  },
-  cardBody: {
-    gap: 3,
-  },
-  label: {
-    color: '#ccc',
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-  sub: {
-    color: '#444',
-    fontSize: 10,
-  },
+  pip: { width: 6, height: 6, borderRadius: 3, alignSelf: 'center' },
+  label: { color: '#ddd', fontSize: 15, fontWeight: '500', letterSpacing: 0.2 },
+  sub: { color: '#555', fontSize: 11, flex: 1, textAlign: 'right' },
 })
