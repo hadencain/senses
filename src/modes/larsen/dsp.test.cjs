@@ -53,4 +53,14 @@ ok('master capped at ceiling', dsp.gainToMaster(1, 0.35) === 0.35)
 ok('master capped at 0.6 absolute', dsp.gainToMaster(1, 0.9) === 0.6)
 ok('master 0 at gain 0', dsp.gainToMaster(0, 0.5) === 0)
 
+// --- manifest ---
+const { manifest } = loadESM('./manifest.js')
+const { validateManifest } = loadESM('../validate.js')
+ok('manifest validates clean', validateManifest(manifest).length === 0)
+ok('manifest id is Larsen', manifest.id === 'Larsen')
+ok('overlay <= 4 keys', Array.isArray(manifest.overlay) && manifest.overlay.length <= 4)
+ok('ceiling param max <= 0.6', manifest.params.find(p => p.key === 'ceiling').max <= 0.6)
+ok('all params have sane defaults',
+  manifest.params.every(p => p.default >= p.min && p.default <= p.max))
+
 console.log(`dsp.test: ${pass} assertions passed`)
