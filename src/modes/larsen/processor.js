@@ -36,8 +36,9 @@ export function extractFeatures(frame) {
 
     fbState.value = { prev: grid, mEMA, gain, t: now }
 
-    return { feedbackGain: gain, motion: mEMA, brightness: bsum / (GRID * GRID) }
+    // feedback is an overlay-display alias of feedbackGain (synth.js, render.js read feedbackGain)
+    return { feedbackGain: gain, feedback: gain, motion: mEMA, brightness: bsum / (GRID * GRID) }
   } catch (e) {
-    return { feedbackGain: 0, motion: 0, brightness: 0.5 }
+    return { feedbackGain: 0, feedback: 0, motion: 0, brightness: 0.5 }
   }
 }
