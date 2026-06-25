@@ -1,7 +1,8 @@
 import { mode as GrainField } from './grain-field'
+import { mode as Larsen } from './larsen'
 import { validateManifest } from './validate'
 
-export const MODES = [GrainField]
+export const MODES = [GrainField, Larsen]
 
 export const EDITOR_ENTRIES = [
   {
