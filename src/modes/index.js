@@ -1,8 +1,13 @@
 import { mode as GrainField } from './grain-field'
 import { mode as Larsen } from './larsen'
+import { mode as Rust } from './rust'
+import { mode as ZeroBeat } from './zero-beat'
+import { mode as Redaction } from './redaction'
+import { mode as Bloom } from './bloom'
+import { mode as Latent } from './latent'
 import { validateManifest } from './validate'
 
-export const MODES = [GrainField, Larsen]
+export const MODES = [GrainField, Larsen, Rust, ZeroBeat, Redaction, Bloom, Latent]
 
 export const EDITOR_ENTRIES = [
   {
