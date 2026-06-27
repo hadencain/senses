@@ -1,0 +1,3 @@
+# Native build artifacts — never commit
+android/build/
+android/.cxx/

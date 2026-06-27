@@ -1,0 +1,38 @@
+apply plugin: 'com.android.library'
+
+def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
+apply from: expoModulesCorePlugin
+applyKotlinExpoModulesCorePlugin()
+useCoreDependencies()
+useDefaultAndroidSdkVersions()
+
+android {
+  namespace "expo.modules.sensesaudio"
+  ndkVersion "26.1.10909125"
+
+  buildFeatures {
+    prefab true
+  }
+
+  defaultConfig {
+    externalNativeBuild {
+      cmake {
+        cppFlags "-std=c++17"
+        arguments "-DANDROID_STL=c++_shared"
+      }
+    }
+  }
+
+  externalNativeBuild {
+    cmake {
+      path "CMakeLists.txt"
+    }
+  }
+}
+
+dependencies {
+  // Match react-native-audio-api's Oboe (1.9.0). Both ship liboboe.so; the app
+  // packages a single copy via packagingOptions.pickFirst (app.json
+  // expo-build-properties). Keeping versions identical makes pickFirst symbol-safe.
+  implementation 'com.google.oboe:oboe:1.9.0'
+}
