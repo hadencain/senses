@@ -1,9 +1,14 @@
 const { withMainActivity } = require('@expo/config-plugins')
 
-module.exports = withMainActivity(config => {
-  config.modResults.contents = applyFix(config.modResults.contents)
-  return config
-})
+// withMainActivity's signature is (config, action). The plugin entry must be a
+// ConfigPlugin — a function of `config` — that calls it; passing the action alone
+// makes Expo run it during base config resolution where modResults is undefined.
+module.exports = function withMainActivityKeyfixes(config) {
+  return withMainActivity(config, config => {
+    config.modResults.contents = applyFix(config.modResults.contents)
+    return config
+  })
+}
 
 function applyFix(src) {
   // Add KeyEvent import if missing

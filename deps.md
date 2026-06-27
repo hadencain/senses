@@ -12,7 +12,9 @@
 | @react-native-community/slider | settings sheet sliders | 2026-06-11 |
 | expo-build-properties | force kotlinVersion=1.9.25 via config plugin (RN 0.76 BOM resolves 1.9.24 without it, breaking Compose Compiler 1.5.15) | 2026-06-13 |
 
-Native (local Expo module): `modules/senses-recorder` — MediaProjection screen recording. No npm dep.
+Native (local Expo modules):
+- `modules/senses-recorder` — MediaProjection screen recording. No npm dep.
+- `modules/senses-audio` — Oboe mic capture + grain playback engine. Android NDK required. C++ dep: `com.google.oboe:oboe:1.9.0` (via Maven prefab), version-matched to react-native-audio-api which also bundles Oboe. Both ship `liboboe.so`; the app keeps a single copy via `packagingOptions.pickFirst: ["**/liboboe.so"]` in app.json's expo-build-properties.
 
 Version changes from the 2026-06-02 scaffold:
 - react 18.3.2 → 18.3.1 (18.3.2 does not exist in npm; 18.3.1 is latest React 18.x)

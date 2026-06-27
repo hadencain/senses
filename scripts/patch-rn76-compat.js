@@ -14,7 +14,10 @@ const NM = path.join(__dirname, '..', 'node_modules')
 function patch(filePath, replacements) {
   const abs = path.join(NM, filePath)
   if (!fs.existsSync(abs)) return
-  let src = fs.readFileSync(abs, 'utf8')
+  // Read as buffer to strip BOM before any string work
+  let buf = fs.readFileSync(abs)
+  if (buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) buf = buf.slice(3)
+  let src = buf.toString('utf8')
   let changed = false
   for (const [from, to] of replacements) {
     if (src.includes(from)) {

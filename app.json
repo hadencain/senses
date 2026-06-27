@@ -29,7 +29,10 @@
         {
           "android": {
             "kotlinVersion": "1.9.25",
-            "minSdkVersion": 26
+            "minSdkVersion": 26,
+            "packagingOptions": {
+              "pickFirst": ["**/liboboe.so"]
+            }
           }
         }
       ],
