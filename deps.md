@@ -11,6 +11,7 @@
 | @react-native-async-storage/async-storage | per-effect param persistence | 2026-06-11 |
 | @react-native-community/slider | settings sheet sliders | 2026-06-11 |
 | expo-build-properties | force kotlinVersion=1.9.25 via config plugin (RN 0.76 BOM resolves 1.9.24 without it, breaking Compose Compiler 1.5.15) | 2026-06-13 |
+| expo-file-system | take storage for re-render capture (take dirs: raw.mp4 + sidecar.json + meta.json under documentDirectory/takes/) | 2026-06-27 |
 
 Native (local Expo modules):
 - `modules/senses-recorder` — MediaProjection screen recording. No npm dep.
