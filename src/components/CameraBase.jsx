@@ -27,6 +27,8 @@ export function CameraBase({
   pixelFormat = 'yuv',
   skia,
   children,
+  cameraRef,
+  recordable = false,
 }) {
   const { hasPermission, requestPermission } = useCameraPermission()
   const hookDevices = useCameraDevices()
@@ -125,11 +127,14 @@ export function CameraBase({
   return (
     <View style={styles.fill}>
       <Camera
+        ref={cameraRef}
         style={StyleSheet.absoluteFill}
         device={device}
         isActive
         frameProcessor={frameProcessor}
         pixelFormat={pixelFormat}
+        video={recordable}
+        audio={recordable}
       />
       <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
         {skia}
