@@ -38,6 +38,9 @@ export function EffectScreen() {
     })
   }, [])
 
+  const recorderRef = useRef(recorder)
+  useEffect(() => { recorderRef.current = recorder })
+
   const onParamChange = useCallback((key, value) => {
     setParams(prev => {
       const next = { ...prev, [key]: value }
@@ -46,8 +49,8 @@ export function EffectScreen() {
       saveParams(manifest.id, next)
       return next
     })
-    if (recorder.state === 'recording') recorder.logParam(key, value)
-  }, [recorder])
+    if (recorderRef.current.state === 'recording') recorderRef.current.logParam(key, value)
+  }, [])
 
   const synthRef = useRef(null)
   useEffect(() => {
@@ -67,13 +70,13 @@ export function EffectScreen() {
   const onFeatures = useCallback(features => {
     const motionSnap = { speed: motion.speed.value, tilt: motion.tilt.value, ax: motion.ax.value, ay: motion.ay.value }
     synthRef.current?.update(features, motionSnap, paramsRef.current)
-    if (recorder.state === 'recording') recorder.logFeatures(features, motionSnap)
+    if (recorderRef.current.state === 'recording') recorderRef.current.logFeatures(features, motionSnap)
     const now = Date.now()
     if (now - lastTickRef.current > 1000 / OVERLAY_HZ) {
       lastTickRef.current = now
       setOverlay({ ...features, ...motionSnap })
     }
-  }, [recorder])
+  }, [])
 
   const onFeaturesJS = useMemo(() => Worklets.createRunOnJS(onFeatures), [onFeatures])
 
@@ -98,8 +101,6 @@ export function EffectScreen() {
     })
   }, [featuresSV, paramsSV, motion.speed, motion.tilt, motion.ax, motion.ay])
 
-  const recorderRef = useRef(recorder)
-  useEffect(() => { recorderRef.current = recorder })
   useEffect(() => {
     return () => { if (recorderRef.current.state === 'recording') recorderRef.current.stop() }
   }, [])
