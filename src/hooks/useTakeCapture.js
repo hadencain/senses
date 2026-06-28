@@ -64,13 +64,13 @@ export function useTakeCapture(cameraRef) {
     setState('saving')
     try {
       await cameraRef.current?.stopRecording()
+      const dur = Date.now() - t0Ref.current
       // wait briefly for onRecordingFinished to deliver the path
       for (let i = 0; i < 50 && !rawUriRef.current; i++) {
         await new Promise(r => setTimeout(r, 100))
       }
       const sc = sidecarRef.current
       if (!sc || !rawUriRef.current) { setState('idle'); return null }
-      const dur = Date.now() - t0Ref.current
       const createdAt = t0Ref.current
       const id = takeId(createdAt, metaRef.current.effectId)
       await saveTake({

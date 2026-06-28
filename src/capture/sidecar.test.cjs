@@ -50,4 +50,22 @@ ok('replay params folded', r.params.heal === 0.3)   // change is at t=100, query
 ok('replay motion nearest', r.motion.speed === 0.9) // sample at t=50 closest to 60
 ok('replay features nearest', near(r.features.rustSum, 0.5))
 
+// full round-trip: distinct effectId, two param changes, two motion+feature samples
+// query at t=250 → gain folded (logged at 200), freq not yet (logged at 400),
+// motion+features both nearest t=300 (dist=50) over t=10 (dist=240)
+ok('round-trip: params+motion+features at known t', (() => {
+  const rec2 = sc.createSidecar('Larsen', 2, { gain: 0.4, freq: 0.7 })
+  rec2.logParam(200, 'gain', 0.8)
+  rec2.logParam(400, 'freq', 0.2)
+  rec2.logMotion(10,  { speed: 0.2, tilt: 0.1, ax: 0.3,  ay: -0.1 })
+  rec2.logMotion(300, { speed: 0.5, tilt: 0.6, ax: -0.2, ay: 0.4  })
+  rec2.logFeatures(10,  { brightness: 0.3 })
+  rec2.logFeatures(300, { brightness: 0.9 })
+  const s2 = rec2.serialize(500)
+  const r2 = sc.replayAt(s2, 250)
+  return r2.params.gain === 0.8 && r2.params.freq === 0.7 &&
+         near(r2.motion.speed, 0.5) && near(r2.motion.tilt, 0.6) &&
+         near(r2.features.brightness, 0.9)
+})())
+
 console.log(`sidecar.test: ${pass} assertions passed`)

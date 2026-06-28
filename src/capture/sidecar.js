@@ -1,6 +1,13 @@
 // src/capture/sidecar.js
 // Pure capture timeline + deterministic replay. No RN deps; Node-tested.
 // All timestamps `t` are elapsed milliseconds from record start.
+//
+// TIMESTAMP CONTRACT (deferred to Phase 2):
+// Sidecar `t` values are JS-thread elapsed-ms from record start (Date.now() - t0).
+// They drift from the video's PTS due to VisionCamera start latency and runOnJS
+// dispatch jitter. Phase 2 (the offline compositor) owns the alignment; the durable
+// fix is to thread frame.timestamp through the frame processor so both clocks share
+// an origin. Do not assume `t` == video PTS until that wiring lands.
 
 function round4(v) {
   return Math.round(v * 10000) / 10000
@@ -62,7 +69,7 @@ export function replayAt(sidecar, t) {
   const fSample = nearestByT(sidecar.features, t)
   return {
     params,
-    motion: mSample ? { speed: mSample.speed, tilt: mSample.tilt, ax: mSample.ax, ay: mSample.ay } : { speed: 0, tilt: 0.5, ax: 0, ay: 0 },
+    motion: mSample ? { speed: mSample.speed, tilt: mSample.tilt, ax: mSample.ax, ay: mSample.ay } : { speed: 0, tilt: 0, ax: 0, ay: 0 },
     features: fSample ? fSample.f : null,
   }
 }
