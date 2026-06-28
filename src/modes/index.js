@@ -5,9 +5,10 @@ import { mode as ZeroBeat } from './zero-beat'
 import { mode as Redaction } from './redaction'
 import { mode as Bloom } from './bloom'
 import { mode as Latent } from './latent'
+import { mode as Striate } from './striate'
 import { validateManifest } from './validate'
 
-export const MODES = [GrainField, Larsen, Rust, ZeroBeat, Redaction, Bloom, Latent]
+export const MODES = [GrainField, Larsen, Rust, ZeroBeat, Redaction, Bloom, Latent, Striate]
 
 export const EDITOR_ENTRIES = [
   {
