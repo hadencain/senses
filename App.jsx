@@ -6,6 +6,7 @@ import { StyleSheet } from 'react-native'
 import { Menu } from './src/screens/Menu'
 import { EffectScreen } from './src/components/EffectScreen'
 import { EditorStub } from './src/screens/EditorStub'
+import { TakesLibrary } from './src/screens/TakesLibrary'
 
 const Stack = createStackNavigator()
 
@@ -17,6 +18,7 @@ export default function App() {
           <Stack.Screen name="Menu" component={Menu} />
           <Stack.Screen name="Effect" component={EffectScreen} />
           <Stack.Screen name="EditorStub" component={EditorStub} />
+          <Stack.Screen name="Takes" component={TakesLibrary} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>

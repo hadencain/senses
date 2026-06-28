@@ -43,6 +43,20 @@ export function Menu({ navigation }) {
             </TouchableOpacity>
           )
         }}
+        ListFooterComponent={
+          <>
+            <Text style={styles.section}>LIBRARY</Text>
+            <TouchableOpacity
+              style={styles.row}
+              activeOpacity={0.6}
+              onPress={() => navigation.navigate('Takes')}
+            >
+              <View style={[styles.pip, { backgroundColor: '#555' }]} />
+              <Text style={styles.label}>Takes</Text>
+              <Text style={styles.sub}>recordings</Text>
+            </TouchableOpacity>
+          </>
+        }
       />
     </View>
   )
