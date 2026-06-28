@@ -10,7 +10,7 @@ export function TakesLibrary({ navigation }) {
   const refresh = useCallback(() => { listTakes().then(setTakes).catch(() => setTakes([])) }, [])
   useFocusEffect(refresh)
 
-  const onDelete = useCallback(async (id) => { await deleteTake(id); refresh() }, [refresh])
+  const onDelete = useCallback(async (id) => { try { await deleteTake(id) } finally { refresh() } }, [refresh])
 
   return (
     <View style={styles.root}>
