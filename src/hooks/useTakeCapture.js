@@ -24,7 +24,7 @@ export function useTakeCapture(cameraRef) {
     activeRef.current = true
     try {
       await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
-      if (!cameraRef.current) return
+      if (!cameraRef.current) { activeRef.current = false; return }
       metaRef.current = { effectId, effectVersion }
       sidecarRef.current = createSidecar(effectId, effectVersion, startParams)
       rawUriRef.current = null
