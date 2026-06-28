@@ -17,8 +17,11 @@ export function useTakeCapture(cameraRef) {
   const timerRef = useRef(null)
   const metaRef = useRef({ effectId: null, effectVersion: 1 })
   const rawUriRef = useRef(null)
+  const activeRef = useRef(false)
 
   const start = useCallback(async (effectId, effectVersion, startParams) => {
+    if (activeRef.current) return
+    activeRef.current = true
     try {
       await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
       if (!cameraRef.current) return
@@ -36,6 +39,7 @@ export function useTakeCapture(cameraRef) {
       setState('recording')
     } catch (e) {
       console.warn('[take] start failed', e?.message)
+      activeRef.current = false
       setState('idle')
     }
   }, [cameraRef])
@@ -55,6 +59,7 @@ export function useTakeCapture(cameraRef) {
   }, [])
 
   const stop = useCallback(async () => {
+    if (!activeRef.current) return null
     clearInterval(timerRef.current)
     setState('saving')
     try {
@@ -84,7 +89,9 @@ export function useTakeCapture(cameraRef) {
       console.warn('[take] stop/save failed', e?.message)
       return null
     } finally {
+      activeRef.current = false
       sidecarRef.current = null
+      rawUriRef.current = null
       setState('idle')
     }
   }, [cameraRef])
