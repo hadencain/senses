@@ -11,7 +11,7 @@ import { LiveChrome } from './LiveChrome'
 import { OverlayRail } from './OverlayRail'
 import { SettingsSheet } from './SettingsSheet'
 import { useMotion } from '../hooks/useMotion'
-import { useRecorder } from '../hooks/useRecorder'
+import { useTakeCapture } from '../hooks/useTakeCapture'
 import { getMode } from '../modes'
 import { defaultParams, loadParams, saveParams } from '../state/params'
 
@@ -23,7 +23,8 @@ export function EffectScreen() {
   const { manifest, extractFeatures, createSynth, makePicture } = getMode(modeId)
   const dims = useWindowDimensions()
   const motion = useMotion()
-  const recorder = useRecorder()
+  const cameraRef = useRef(null)
+  const recorder = useTakeCapture(cameraRef)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   const [params, setParams] = useState(() => defaultParams(manifest))
@@ -45,7 +46,8 @@ export function EffectScreen() {
       saveParams(manifest.id, next)
       return next
     })
-  }, [])
+    if (recorder.state === 'recording') recorder.logParam(key, value)
+  }, [recorder])
 
   const synthRef = useRef(null)
   useEffect(() => {
@@ -63,14 +65,15 @@ export function EffectScreen() {
   const lastTickRef = useRef(0)
 
   const onFeatures = useCallback(features => {
-    const motionSnap = { speed: motion.speed.value, tilt: motion.tilt.value }
+    const motionSnap = { speed: motion.speed.value, tilt: motion.tilt.value, ax: motion.ax.value, ay: motion.ay.value }
     synthRef.current?.update(features, motionSnap, paramsRef.current)
+    if (recorder.state === 'recording') recorder.logFeatures(features, motionSnap)
     const now = Date.now()
     if (now - lastTickRef.current > 1000 / OVERLAY_HZ) {
       lastTickRef.current = now
       setOverlay({ ...features, ...motionSnap })
     }
-  }, [])
+  }, [recorder])
 
   const onFeaturesJS = useMemo(() => Worklets.createRunOnJS(onFeatures), [onFeatures])
 
@@ -104,12 +107,12 @@ export function EffectScreen() {
   const recording = recorder.state === 'recording'
 
   return (
-    <CameraBase frameProcessor={fp} skia={<Picture picture={picture} />}>
+    <CameraBase frameProcessor={fp} skia={<Picture picture={picture} />} cameraRef={cameraRef} recordable>
       <OverlayRail keys={manifest.overlay} values={overlay} accent={manifest.accent} />
       <LiveChrome
         recording={recording}
         durationMs={recorder.durationMs}
-        onRecord={recorder.start}
+        onRecord={() => recorder.start(manifest.id, manifest.version ?? 1, paramsRef.current)}
         onStop={recorder.stop}
         onSettings={() => setSettingsOpen(true)}
         onBack={() => nav.goBack()}
