@@ -33,7 +33,12 @@ export function useTakeCapture(cameraRef) {
       timerRef.current = setInterval(() => setDurationMs(Date.now() - t0Ref.current), 500)
 
       cameraRef.current.startRecording({
-        onRecordingFinished: (video) => { rawUriRef.current = video.path },
+        // VisionCamera returns a bare path (e.g. /data/.../cache/x.mov); expo-file-system
+        // moveAsync requires a file:// URI, so normalize it here.
+        onRecordingFinished: (video) => {
+          const p = video.path
+          rawUriRef.current = p.startsWith('file://') ? p : `file://${p}`
+        },
         onRecordingError: (e) => { console.warn('[take] recording error', e?.message) },
       })
       setState('recording')
