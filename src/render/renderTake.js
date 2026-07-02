@@ -41,13 +41,19 @@ export async function renderTake(id, { onProgress, shouldCancel } = {}) {
   const surface = Skia.Surface.MakeOffscreen(outW, outH)
   if (!surface) { video.dispose?.(); throw new Error(`MakeOffscreen ${outW}x${outH} failed`) }
   const canvas = surface.getCanvas()
+  const dispose = () => { video.dispose?.(); surface.dispose?.() }
 
-  await SensesRender.begin(noScheme(renderPath), outW, outH, fps, bitrate, probe.hasAudio ? noScheme(paths.raw) : null)
+  try {
+    await SensesRender.begin(noScheme(renderPath), outW, outH, fps, bitrate, probe.hasAudio ? noScheme(paths.raw) : null)
+  } catch (e) {
+    dispose()
+    throw e
+  }
   try {
     for (let k = 0; k < n; k++) {
       if (shouldCancel?.()) {
         await SensesRender.abort()
-        video.dispose?.()
+        dispose()
         return { cancelled: true }
       }
       const img = video.nextImage()
@@ -72,10 +78,10 @@ export async function renderTake(id, { onProgress, shouldCancel } = {}) {
     await SensesRender.finish()
   } catch (e) {
     await SensesRender.abort().catch(() => {})
-    video.dispose?.()
+    dispose()
     throw e
   }
-  video.dispose?.()
+  dispose()
 
   const galleryUri = await SensesRender.exportToGallery(noScheme(renderPath), `senses-${id}.mp4`, meta.galleryUri ?? null)
   await writeMeta(id, metaAfterRender(meta, {
