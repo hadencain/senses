@@ -67,7 +67,8 @@ class SensesRenderModule : Module() {
     AsyncFunction("pushFrame") { rgba: Uint8Array, ptsUs: Double ->
       val s = session ?: throw IllegalStateException("no active render session")
       val buf = frameBuf ?: throw IllegalStateException("no frame buffer")
-      rgba.read(buf, 0, minOf(rgba.length, buf.size))
+      if (rgba.length != buf.size) throw IllegalArgumentException("frame byte size ${rgba.length} != expected ${buf.size}")
+      rgba.read(buf, 0, buf.size)
       s.pushFrame(buf, ptsUs.toLong())
     }
 

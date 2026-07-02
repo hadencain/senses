@@ -74,11 +74,16 @@ class EncodeSession(
   }
 
   fun finish() {
-    val idx = encoder.dequeueInputBuffer(1_000_000)
-    if (idx < 0) throw IllegalStateException("encoder EOS input timeout")
-    encoder.queueInputBuffer(idx, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-    drain(endOfStream = true)
-    copyAudio()
+    try {
+      val idx = encoder.dequeueInputBuffer(1_000_000)
+      if (idx < 0) throw IllegalStateException("encoder EOS input timeout")
+      encoder.queueInputBuffer(idx, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+      drain(endOfStream = true)
+      copyAudio()
+    } catch (e: Exception) {
+      release(deleteFile = true)
+      throw e
+    }
     release(deleteFile = false)
   }
 

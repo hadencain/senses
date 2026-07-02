@@ -75,6 +75,11 @@ export async function renderTake(id, { onProgress, shouldCancel } = {}) {
       await SensesRender.pushFrame(px, probe.videoPtsUs[k])
       onProgress?.((k + 1) / n)
     }
+    if (shouldCancel?.()) {
+      await SensesRender.abort()
+      dispose()
+      return { cancelled: true }
+    }
     await SensesRender.finish()
   } catch (e) {
     await SensesRender.abort().catch(() => {})
