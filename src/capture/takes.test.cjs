@@ -38,4 +38,13 @@ ok('sort non-mutating', (() => { const a = [{ createdAt: 1 }, { createdAt: 2 }];
 ok('formatDuration', tk.formatDuration(65000) === '1:05')
 ok('formatDuration zero', tk.formatDuration(0) === '0:00')
 
+// ---- metaAfterRender ----
+const base = tk.makeMeta({ id: 'x', effectId: 'Rust', durationMs: 1000, createdAt: 5, width: 0, height: 0 })
+const after = tk.metaAfterRender(base, { width: 1080, height: 1920, renderedWithVersion: 3, galleryUri: 'content://media/9', renderedAt: 77 })
+ok('metaAfterRender sets dims', after.width === 1080 && after.height === 1920)
+ok('metaAfterRender marks rendered', after.rendered === true && after.renderedAt === 77)
+ok('metaAfterRender records version + uri', after.renderedWithVersion === 3 && after.galleryUri === 'content://media/9')
+ok('metaAfterRender does not mutate', base.rendered === false && base.width === 0)
+ok('metaAfterRender keeps identity', after.id === 'x' && after.effectId === 'Rust' && after.schema === 1)
+
 console.log(`takes.test: ${pass} assertions passed`)

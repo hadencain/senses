@@ -22,3 +22,7 @@ export function formatDuration(ms) {
   const s = Math.floor(ms / 1000)
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
+
+export function metaAfterRender(meta, { width, height, renderedWithVersion, galleryUri, renderedAt }) {
+  return { ...meta, width, height, rendered: true, renderedAt, renderedWithVersion, galleryUri }
+}

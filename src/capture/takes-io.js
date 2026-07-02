@@ -39,3 +39,15 @@ export async function deleteTake(id) {
   const p = takePaths(TAKES_ROOT, id)
   await FileSystem.deleteAsync(p.dir, { idempotent: true })
 }
+
+export async function loadTake(id) {
+  const paths = takePaths(TAKES_ROOT, id)
+  const meta = JSON.parse(await FileSystem.readAsStringAsync(paths.meta))
+  const sidecar = JSON.parse(await FileSystem.readAsStringAsync(paths.sidecar))
+  return { meta, sidecar, paths }
+}
+
+export async function writeMeta(id, meta) {
+  const paths = takePaths(TAKES_ROOT, id)
+  await FileSystem.writeAsStringAsync(paths.meta, JSON.stringify(meta))
+}
