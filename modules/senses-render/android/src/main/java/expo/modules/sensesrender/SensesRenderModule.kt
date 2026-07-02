@@ -1,10 +1,16 @@
 package expo.modules.sensesrender
 
+import android.content.ContentValues
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import android.net.Uri
+import android.os.Environment
+import android.provider.MediaStore
+import android.view.WindowManager
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.typedarray.Uint8Array
+import java.io.File
 
 class SensesRenderModule : Module() {
   private var session: EncodeSession? = null
@@ -80,6 +86,36 @@ class SensesRenderModule : Module() {
     // Spike-only: measures JS→native Uint8Array transfer cost, does nothing.
     AsyncFunction("noopFrame") { rgba: Uint8Array ->
       rgba.length
+    }
+
+    AsyncFunction("exportToGallery") { path: String, displayName: String, replaceUri: String? ->
+      val ctx = appContext.reactContext ?: throw IllegalStateException("no react context")
+      val resolver = ctx.contentResolver
+      if (replaceUri != null) runCatching { resolver.delete(Uri.parse(replaceUri), null, null) }
+      val values = ContentValues().apply {
+        put(MediaStore.Video.Media.DISPLAY_NAME, displayName)
+        put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+        put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/Senses")
+        put(MediaStore.Video.Media.IS_PENDING, 1)
+      }
+      val uri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
+        ?: throw IllegalStateException("MediaStore insert failed")
+      resolver.openOutputStream(uri).use { out ->
+        requireNotNull(out) { "cannot open $uri" }
+        File(path).inputStream().use { it.copyTo(out) }
+      }
+      values.clear()
+      values.put(MediaStore.Video.Media.IS_PENDING, 0)
+      resolver.update(uri, values, null, null)
+      uri.toString()
+    }
+
+    Function("setKeepScreenOn") { on: Boolean ->
+      val activity = appContext.currentActivity ?: return@Function
+      activity.runOnUiThread {
+        if (on) activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+      }
     }
   }
 }

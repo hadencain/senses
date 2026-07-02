@@ -16,6 +16,8 @@ type SensesRenderModule = {
   finish(): Promise<void>
   abort(): Promise<void>
   noopFrame(rgba: Uint8Array): Promise<void>
+  exportToGallery(path: string, displayName: string, replaceUri: string | null): Promise<string>
+  setKeepScreenOn(on: boolean): void
 }
 
 export default requireNativeModule<SensesRenderModule>('SensesRender')
