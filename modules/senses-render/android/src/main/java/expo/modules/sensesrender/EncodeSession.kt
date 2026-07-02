@@ -31,6 +31,9 @@ class EncodeSession(
   private val yuv = ByteArray(width * height * 3 / 2)
 
   init {
+    require(width > 0 && height > 0 && width % 2 == 0 && height % 2 == 0) {
+      "dimensions must be positive and even: ${width}x${height}"
+    }
     if (audioSourcePath != null) {
       val ex = MediaExtractor()
       try {
@@ -50,7 +53,13 @@ class EncodeSession(
     encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC)
     encoder.configure(fmt, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
     encoder.start()
-    muxer = MediaMuxer(outPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+    muxer = try {
+      MediaMuxer(outPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+    } catch (e: Exception) {
+      runCatching { encoder.stop() }
+      runCatching { encoder.release() }
+      throw e
+    }
   }
 
   fun pushFrame(rgba: ByteArray, ptsUs: Long) {
@@ -66,7 +75,8 @@ class EncodeSession(
 
   fun finish() {
     val idx = encoder.dequeueInputBuffer(1_000_000)
-    if (idx >= 0) encoder.queueInputBuffer(idx, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+    if (idx < 0) throw IllegalStateException("encoder EOS input timeout")
+    encoder.queueInputBuffer(idx, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
     drain(endOfStream = true)
     copyAudio()
     release(deleteFile = false)
@@ -77,17 +87,25 @@ class EncodeSession(
   }
 
   private fun drain(endOfStream: Boolean) {
+    var eosTryAgainCount = 0
     while (true) {
       val out = encoder.dequeueOutputBuffer(info, if (endOfStream) 10_000L else 0L)
       when {
-        out == MediaCodec.INFO_TRY_AGAIN_LATER -> if (endOfStream) continue else return
+        out == MediaCodec.INFO_TRY_AGAIN_LATER -> {
+          if (!endOfStream) return
+          eosTryAgainCount++
+          if (eosTryAgainCount > 500) throw IllegalStateException("encoder EOS drain timeout")
+          continue
+        }
         out == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
+          eosTryAgainCount = 0
           videoTrack = muxer.addTrack(encoder.outputFormat)
           audioFormat?.let { audioTrack = muxer.addTrack(it) }
           muxer.start()
           muxerStarted = true
         }
         out >= 0 -> {
+          eosTryAgainCount = 0
           val buf = encoder.getOutputBuffer(out) ?: continue
           if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) info.size = 0
           if (info.size > 0 && muxerStarted) muxer.writeSampleData(videoTrack, buf, info)
