@@ -100,13 +100,18 @@ class SensesRenderModule : Module() {
       }
       val uri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
         ?: throw IllegalStateException("MediaStore insert failed")
-      resolver.openOutputStream(uri).use { out ->
-        requireNotNull(out) { "cannot open $uri" }
-        File(path).inputStream().use { it.copyTo(out) }
+      try {
+        resolver.openOutputStream(uri).use { out ->
+          requireNotNull(out) { "cannot open $uri" }
+          File(path).inputStream().use { it.copyTo(out) }
+        }
+        values.clear()
+        values.put(MediaStore.Video.Media.IS_PENDING, 0)
+        resolver.update(uri, values, null, null)
+      } catch (e: Exception) {
+        runCatching { resolver.delete(uri, null, null) }
+        throw e
       }
-      values.clear()
-      values.put(MediaStore.Video.Media.IS_PENDING, 0)
-      resolver.update(uri, values, null, null)
       uri.toString()
     }
 
