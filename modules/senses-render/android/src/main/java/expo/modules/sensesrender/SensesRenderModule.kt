@@ -4,8 +4,12 @@ import android.media.MediaExtractor
 import android.media.MediaFormat
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.kotlin.typedarray.Uint8Array
 
 class SensesRenderModule : Module() {
+  private var session: EncodeSession? = null
+  private var frameBuf: ByteArray? = null
+
   override fun definition() = ModuleDefinition {
     Name("SensesRender")
 
@@ -45,6 +49,37 @@ class SensesRenderModule : Module() {
       } finally {
         ex.release()
       }
+    }
+
+    AsyncFunction("begin") { outPath: String, width: Int, height: Int, fps: Int, bitrate: Int, audioSourcePath: String? ->
+      if (session != null) throw IllegalStateException("render session already active")
+      session = EncodeSession(outPath, width, height, fps, bitrate, audioSourcePath)
+      frameBuf = ByteArray(width * height * 4)
+      Unit
+    }
+
+    AsyncFunction("pushFrame") { rgba: Uint8Array, ptsUs: Double ->
+      val s = session ?: throw IllegalStateException("no active render session")
+      val buf = frameBuf ?: throw IllegalStateException("no frame buffer")
+      rgba.read(buf, 0, minOf(rgba.length, buf.size))
+      s.pushFrame(buf, ptsUs.toLong())
+    }
+
+    AsyncFunction("finish") {
+      val s = session ?: throw IllegalStateException("no active render session")
+      try { s.finish() } finally { session = null; frameBuf = null }
+    }
+
+    AsyncFunction("abort") {
+      session?.abort()
+      session = null
+      frameBuf = null
+      Unit
+    }
+
+    // Spike-only: measures JS→native Uint8Array transfer cost, does nothing.
+    AsyncFunction("noopFrame") { rgba: Uint8Array ->
+      rgba.length
     }
   }
 }

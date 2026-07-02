@@ -11,6 +11,11 @@ export type ProbeResult = {
 
 type SensesRenderModule = {
   probe(rawPath: string): Promise<ProbeResult>
+  begin(outPath: string, width: number, height: number, fps: number, bitrate: number, audioSourcePath: string | null): Promise<void>
+  pushFrame(rgba: Uint8Array, ptsUs: number): Promise<void>
+  finish(): Promise<void>
+  abort(): Promise<void>
+  noopFrame(rgba: Uint8Array): Promise<void>
 }
 
 export default requireNativeModule<SensesRenderModule>('SensesRender')
