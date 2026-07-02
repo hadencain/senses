@@ -29,7 +29,7 @@ rec.logFeatures(0, { rustSum: 0.123456789, rust: [0.111111, 0.999999] })
 rec.logFeatures(50, { rustSum: 0.5, rust: [0.2, 0.4] })
 const s = rec.serialize(1000)
 
-ok('schema + ids', s.schema === 1 && s.effectId === 'Rust' && s.effectVersion === 1)
+ok('schema + ids', s.schema === 2 && s.effectId === 'Rust' && s.effectVersion === 1)
 ok('startParams preserved', s.startParams.heal === 0.3)
 ok('duration', s.durationMs === 1000)
 ok('params logged', s.params.length === 1 && s.params[0].key === 'heal')
@@ -67,5 +67,33 @@ ok('round-trip: params+motion+features at known t', (() => {
          near(r2.motion.speed, 0.5) && near(r2.motion.tilt, 0.6) &&
          near(r2.features.brightness, 0.9)
 })())
+
+// ---- schema 2: pts plumbed through, schema bumped ----
+const rec3 = sc.createSidecar('Rust', 1, { heal: 0.3 })
+rec3.logFeatures(0, { rustSum: 0.1 }, 1_000_000_000)
+rec3.logMotion(0, { speed: 0.1, tilt: 0, ax: 0, ay: 0 }, 1_000_000_000)
+rec3.logFeatures(33, { rustSum: 0.2 }, 1_033_000_000)
+rec3.logMotion(33, { speed: 0.9, tilt: 0, ax: 0, ay: 0 }, 1_033_000_000)
+const s3 = rec3.serialize(66)
+ok('schema is 2', s3.schema === 2)
+ok('feature pts stored', s3.features[0].pts === 1_000_000_000 && s3.features[1].pts === 1_033_000_000)
+ok('motion pts stored', s3.motion[1].pts === 1_033_000_000)
+ok('pts omitted when not given', !('pts' in sc.createSidecar('x', 1, {}).serialize(0)) && (() => {
+  const r = sc.createSidecar('x', 1, {}); r.logFeatures(0, { a: 1 }); return !('pts' in r.serialize(0).features[0])
+})())
+
+// ---- replayFrame: direct index lookup ----
+rec3.logParam(20, 'heal', 0.9)
+const s4 = rec3.serialize(66)
+const rf = sc.replayFrame(s4, { featureIdx: 1, motionIdx: 1, tJsMs: 33 })
+ok('replayFrame picks indexed feature', near(rf.features.rustSum, 0.2))
+ok('replayFrame picks indexed motion', near(rf.motion.speed, 0.9))
+ok('replayFrame folds params at tJsMs', rf.params.heal === 0.9)
+ok('replayFrame folds params before change', sc.replayFrame(s4, { featureIdx: 0, motionIdx: 0, tJsMs: 10 }).params.heal === 0.3)
+
+// ---- replayFrame fallback: null index → replayAt semantics ----
+const rfb = sc.replayFrame(s4, { featureIdx: null, motionIdx: null, tJsMs: 33 })
+ok('replayFrame null-idx falls back to nearest-by-t', near(rfb.features.rustSum, 0.2) && near(rfb.motion.speed, 0.9))
+ok('replayFrame -1 idx falls back too', near(sc.replayFrame(s4, { featureIdx: -1, motionIdx: -1, tJsMs: 33 }).features.rustSum, 0.2))
 
 console.log(`sidecar.test: ${pass} assertions passed`)

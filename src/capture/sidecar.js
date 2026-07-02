@@ -2,12 +2,12 @@
 // Pure capture timeline + deterministic replay. No RN deps; Node-tested.
 // All timestamps `t` are elapsed milliseconds from record start.
 //
-// TIMESTAMP CONTRACT (deferred to Phase 2):
+// TIMESTAMP CONTRACT (schema 2):
 // Sidecar `t` values are JS-thread elapsed-ms from record start (Date.now() - t0).
+// Schema 2 samples carry optional `pts` (camera-clock ns from frame.timestamp).
 // They drift from the video's PTS due to VisionCamera start latency and runOnJS
-// dispatch jitter. Phase 2 (the offline compositor) owns the alignment; the durable
-// fix is to thread frame.timestamp through the frame processor so both clocks share
-// an origin. Do not assume `t` == video PTS until that wiring lands.
+// dispatch jitter. The offline compositor (src/render/align.js) owns alignment.
+// Do not assume `t` == video PTS; use `pts` for camera-clock alignment.
 
 function round4(v) {
   return Math.round(v * 10000) / 10000
@@ -33,12 +33,18 @@ export function createSidecar(effectId, effectVersion, startParams) {
   const features = []
   return {
     logParam(t, key, value) { params.push({ t, key, value }) },
-    logMotion(t, m) {
-      motion.push({ t, speed: round4(m.speed ?? 0), tilt: round4(m.tilt ?? 0), ax: round4(m.ax ?? 0), ay: round4(m.ay ?? 0) })
+    logMotion(t, m, pts) {
+      const e = { t, speed: round4(m.speed ?? 0), tilt: round4(m.tilt ?? 0), ax: round4(m.ax ?? 0), ay: round4(m.ay ?? 0) }
+      if (typeof pts === 'number') e.pts = pts
+      motion.push(e)
     },
-    logFeatures(t, f) { features.push({ t, f: compactFeatures(f) }) },
+    logFeatures(t, f, pts) {
+      const e = { t, f: compactFeatures(f) }
+      if (typeof pts === 'number') e.pts = pts
+      features.push(e)
+    },
     serialize(durationMs) {
-      return { schema: 1, effectId, effectVersion, startParams: { ...startParams }, durationMs, params, motion, features }
+      return { schema: 2, effectId, effectVersion, startParams: { ...startParams }, durationMs, params, motion, features }
     },
   }
 }
@@ -71,5 +77,22 @@ export function replayAt(sidecar, t) {
     params,
     motion: mSample ? { speed: mSample.speed, tilt: mSample.tilt, ax: mSample.ax, ay: mSample.ay } : { speed: 0, tilt: 0, ax: 0, ay: 0 },
     features: fSample ? fSample.f : null,
+  }
+}
+
+// Direct index lookup used by the offline compositor (schema 2). `entry` comes
+// from src/render/align.js. Null/negative indices mean "no camera pts
+// available" — fall back to nearest-by-t replay.
+export function replayFrame(sidecar, entry) {
+  if (!entry) return replayAt(sidecar, 0)
+  if (entry.featureIdx == null || entry.featureIdx < 0) return replayAt(sidecar, entry.tJsMs)
+  const params = foldParams(sidecar.startParams, sidecar.params, entry.tJsMs)
+  const mi = entry.motionIdx == null ? -1 : Math.min(entry.motionIdx, sidecar.motion.length - 1)
+  const m = mi >= 0 ? sidecar.motion[mi] : null
+  const f = sidecar.features[Math.min(entry.featureIdx, sidecar.features.length - 1)] ?? null
+  return {
+    params,
+    motion: m ? { speed: m.speed, tilt: m.tilt, ax: m.ax, ay: m.ay } : { speed: 0, tilt: 0, ax: 0, ay: 0 },
+    features: f ? f.f : null,
   }
 }
