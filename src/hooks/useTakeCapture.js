@@ -49,12 +49,12 @@ export function useTakeCapture(cameraRef) {
     }
   }, [cameraRef])
 
-  const logFeatures = useCallback((features, motion) => {
+  const logFeatures = useCallback((features, motion, pts) => {
     const sc = sidecarRef.current
     if (!sc) return
     const t = Date.now() - t0Ref.current
-    sc.logFeatures(t, features)
-    sc.logMotion(t, motion)
+    sc.logFeatures(t, features, pts)
+    sc.logMotion(t, motion, pts)
   }, [])
 
   const logParam = useCallback((key, value) => {

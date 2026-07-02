@@ -67,10 +67,10 @@ export function EffectScreen() {
   const [overlay, setOverlay] = useState({})
   const lastTickRef = useRef(0)
 
-  const onFeatures = useCallback(features => {
+  const onFeatures = useCallback((features, ptsNs) => {
     const motionSnap = { speed: motion.speed.value, tilt: motion.tilt.value, ax: motion.ax.value, ay: motion.ay.value }
     synthRef.current?.update(features, motionSnap, paramsRef.current)
-    if (recorderRef.current.state === 'recording') recorderRef.current.logFeatures(features, motionSnap)
+    if (recorderRef.current.state === 'recording') recorderRef.current.logFeatures(features, motionSnap, ptsNs)
     const now = Date.now()
     if (now - lastTickRef.current > 1000 / OVERLAY_HZ) {
       lastTickRef.current = now
@@ -85,7 +85,7 @@ export function EffectScreen() {
       'worklet'
       const features = extractFeatures(frame)
       featuresSV.value = features
-      onFeaturesJS(features)
+      onFeaturesJS(features, frame.timestamp)
     },
     [onFeaturesJS, featuresSV],
   )
